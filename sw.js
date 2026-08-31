@@ -14,11 +14,7 @@ const ARQUIVOS = [
   './js/config.js',
   './js/base.js',
   './js/telas.js',
-  './img/lop-branca.png',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/apple-touch-icon.png',
-  './icons/favicon.ico',
+  './icone.svg',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'
 ];
 
