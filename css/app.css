@@ -1,0 +1,226 @@
+/* =====================================================================
+   SAKUMA Manutenção de Frota — estilo
+   Identidade: verde #84BD00, marrom #744F28, cinza #51534A, Arial.
+   Sem preto puro. Botões grandes: o app é usado de luva, no campo.
+   Barra do desenvolvedor em grafite LOP #1B232B.
+   ===================================================================== */
+
+:root{
+  --verde:#84BD00;
+  --verde-escuro:#6A9800;
+  --marrom:#744F28;
+  --cinza:#51534A;
+  --cinza-claro:#8A8C83;
+  --linha:#DCDDD7;
+  --fundo:#F6F7F3;
+  --branco:#FFFFFF;
+  --grafite:#1B232B;
+  --verde-lop:#0D4D31;
+
+  --urgente:#C0392B;
+  --atencao:#E1A200;
+  --vencido:#D2691E;
+  --ok:#4E8B1F;
+
+  --toque:48px;              /* alvo mínimo de toque, uso com luva */
+  --raio:6px;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:Arial,Helvetica,sans-serif;
+  color:var(--cinza);
+  background:var(--fundo);
+  font-size:16px;
+  line-height:1.45;
+  -webkit-text-size-adjust:100%;
+}
+.oculto{display:none !important}
+
+/* ---------- barra LOP ---------- */
+.barra-lop{
+  background:var(--grafite);
+  color:#E8EAEC;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:6px 14px;
+  padding-top:calc(6px + env(safe-area-inset-top));
+}
+.marca-lop{height:26px;width:auto;display:block}
+.estado{display:flex;align-items:center;gap:8px;font-size:13px}
+.ponto{width:10px;height:10px;border-radius:50%;background:var(--cinza-claro);display:inline-block}
+.ponto.online{background:var(--verde)}
+.ponto.offline{background:var(--atencao)}
+.fila{
+  background:var(--marrom);color:#fff;border:0;border-radius:20px;
+  padding:5px 12px;font:inherit;font-size:13px;cursor:pointer;
+}
+
+/* ---------- topo SAKUMA ---------- */
+.topo{
+  background:var(--branco);border-bottom:3px solid var(--verde);
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:10px 14px;flex-wrap:wrap;
+}
+.marca{display:flex;align-items:center;gap:10px}
+.marca .icone{width:36px;height:36px}
+.marca strong{display:block;font-size:17px;letter-spacing:.08em;color:var(--cinza)}
+.marca span{display:block;font-size:12px;color:var(--cinza-claro)}
+.sessao{display:flex;align-items:center;gap:10px;font-size:14px}
+.local{color:var(--marrom);font-weight:bold}
+
+/* ---------- menu ---------- */
+.menu{
+  display:flex;gap:2px;background:var(--branco);
+  border-bottom:1px solid var(--linha);overflow-x:auto;
+}
+.menu button{
+  flex:1 0 auto;min-height:var(--toque);padding:0 16px;
+  border:0;border-bottom:3px solid transparent;background:none;
+  font:inherit;font-size:15px;color:var(--cinza);cursor:pointer;white-space:nowrap;
+}
+.menu button.ativo{color:var(--verde-escuro);border-bottom-color:var(--verde);font-weight:bold}
+.menu button:focus-visible,.btn:focus-visible,.btn-fantasma:focus-visible{
+  outline:3px solid var(--marrom);outline-offset:2px;
+}
+
+/* ---------- conteúdo ---------- */
+.conteudo{max-width:1100px;margin:0 auto;padding:16px 14px 90px}
+h1{font-size:21px;margin:0 0 4px}
+h2{font-size:17px;margin:22px 0 8px}
+.sub{color:var(--cinza-claro);font-size:14px;margin:0 0 16px}
+.carregando{text-align:center;color:var(--cinza-claro);padding:40px 0}
+
+/* ---------- botões ---------- */
+.btn{
+  min-height:var(--toque);padding:0 20px;border:0;border-radius:var(--raio);
+  background:var(--verde);color:#fff;font:inherit;font-size:16px;font-weight:bold;
+  cursor:pointer;
+}
+.btn:hover{background:var(--verde-escuro)}
+.btn.secundario{background:var(--marrom)}
+.btn.neutro{background:var(--branco);color:var(--cinza);border:1px solid var(--linha)}
+.btn-fantasma{
+  min-height:38px;padding:0 12px;background:none;border:1px solid var(--linha);
+  border-radius:var(--raio);font:inherit;font-size:14px;color:var(--cinza);cursor:pointer;
+}
+.acoes{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+
+/* ---------- cartões do início ---------- */
+.painel{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.cartao{
+  background:var(--branco);border:1px solid var(--linha);border-left:5px solid var(--verde);
+  border-radius:var(--raio);padding:14px;
+}
+.cartao b{display:block;font-size:28px;line-height:1.1;color:var(--cinza)}
+.cartao span{font-size:13px;color:var(--cinza-claro)}
+.cartao.alerta{border-left-color:var(--marrom)}
+
+/* ---------- busca e filtros ---------- */
+.filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.filtros input,.filtros select{
+  min-height:var(--toque);padding:0 12px;border:1px solid var(--linha);
+  border-radius:var(--raio);font:inherit;font-size:16px;background:var(--branco);color:var(--cinza);
+}
+.filtros input[type=search]{flex:1 1 220px}
+
+/* ---------- listas e tabelas ---------- */
+.tabela{width:100%;border-collapse:collapse;background:var(--branco);
+  border:1px solid var(--linha);border-radius:var(--raio);overflow:hidden}
+.tabela th{
+  background:var(--verde);color:#fff;text-align:left;font-size:13px;
+  padding:10px;font-weight:bold;
+}
+.tabela td{padding:10px;border-top:1px solid var(--linha);font-size:15px;vertical-align:top}
+.tabela tbody tr:hover{background:#FAFBF7}
+.tabela .num{text-align:right;white-space:nowrap}
+.codigo{font-weight:bold;color:var(--marrom);white-space:nowrap}
+
+.lista{list-style:none;margin:0;padding:0}
+.lista li{
+  background:var(--branco);border:1px solid var(--linha);border-radius:var(--raio);
+  padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;
+  align-items:center;gap:12px;flex-wrap:wrap;
+}
+.lista .info{flex:1 1 240px}
+.lista .info small{display:block;color:var(--cinza-claro);font-size:13px}
+
+/* ---------- etiquetas de status: cor E texto ---------- */
+.etq{
+  display:inline-block;padding:3px 10px;border-radius:12px;
+  font-size:12px;font-weight:bold;color:#fff;white-space:nowrap;
+}
+.etq.urgente{background:var(--urgente)}
+.etq.atencao{background:var(--atencao)}
+.etq.vencido{background:var(--vencido)}
+.etq.ok{background:var(--ok)}
+.etq.neutro{background:var(--cinza-claro)}
+.etq.inativo{background:var(--branco);color:var(--cinza-claro);border:1px solid var(--linha)}
+
+/* ---------- formulários ---------- */
+.campo{margin-bottom:14px}
+.campo label{display:block;font-size:14px;margin-bottom:4px;color:var(--cinza)}
+.campo input,.campo select,.campo textarea{
+  width:100%;min-height:var(--toque);padding:10px 12px;
+  border:1px solid var(--linha);border-radius:var(--raio);
+  font:inherit;font-size:16px;background:var(--branco);color:var(--cinza);
+}
+.campo textarea{min-height:90px;resize:vertical}
+.campo .ajuda{font-size:13px;color:var(--cinza-claro);margin-top:3px}
+.colunas{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 14px}
+fieldset{border:1px solid var(--linha);border-radius:var(--raio);padding:14px;margin:0 0 16px}
+legend{padding:0 8px;font-weight:bold;font-size:14px;color:var(--marrom)}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;background:rgba(81,83,74,.55);display:flex;
+  align-items:flex-end;justify-content:center;z-index:50}
+.modal .caixa{
+  background:var(--fundo);width:100%;max-width:760px;max-height:92vh;
+  overflow:auto;border-radius:12px 12px 0 0;
+}
+.modal header{
+  position:sticky;top:0;background:var(--verde);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+}
+.modal header h2{margin:0;font-size:17px;color:#fff}
+.modal header button{background:none;border:0;color:#fff;font-size:30px;
+  line-height:1;cursor:pointer;min-width:44px;min-height:44px}
+.modal #modal-corpo{padding:16px}
+@media(min-width:700px){
+  .modal{align-items:center}
+  .modal .caixa{border-radius:12px}
+}
+
+/* ---------- aviso ---------- */
+.aviso{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:24px;
+  background:var(--grafite);color:#fff;padding:12px 20px;border-radius:24px;
+  font-size:15px;z-index:60;max-width:90vw;text-align:center;
+}
+.aviso.erro{background:var(--urgente)}
+
+/* ---------- rodapé ---------- */
+.rodape{
+  position:fixed;bottom:0;left:0;right:0;background:var(--branco);
+  border-top:1px solid var(--linha);text-align:center;
+  font-size:12px;color:var(--cinza-claro);padding:8px;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom));
+}
+
+.vazio{
+  background:var(--branco);border:1px dashed var(--linha);border-radius:var(--raio);
+  padding:28px 20px;text-align:center;color:var(--cinza-claro);
+}
+.vazio p{margin:0 0 14px}
+
+@media(prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+
+/* ---------- impressão A4 ---------- */
+@media print{
+  .barra-lop,.menu,.rodape,.acoes,.filtros,#btn-instalar,#btn-sair{display:none !important}
+  body{background:#fff;font-size:11pt}
+  .conteudo{padding:0;max-width:none}
+  .topo{border-bottom:2px solid var(--verde)}
+  .tabela th{background:#fff;color:var(--cinza);border-bottom:2px solid var(--verde)}
+  @page{size:A4;margin:14mm}
+}
