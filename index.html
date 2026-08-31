@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SAKUMA Manutenção de Frota</title>
+<meta name="description" content="Manutenção preventiva da frota, implementos e equipamentos da SAKUMA Agronegócios.">
+<meta name="theme-color" content="#1B232B">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/favicon.ico" sizes="any">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Manutenção">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- Barra do desenvolvedor: marca LOP branca sobre grafite -->
+<div class="barra-lop">
+  <img src="img/lop-branca.png" alt="LOP" class="marca-lop">
+  <div class="estado" id="estado-conexao">
+    <span class="ponto" id="ponto-conexao"></span>
+    <span id="txt-conexao">verificando…</span>
+    <button type="button" id="btn-fila" class="fila oculto">0 aguardando envio</button>
+  </div>
+</div>
+
+<!-- Cabeçalho SAKUMA -->
+<header class="topo">
+  <div class="marca">
+    <img src="icons/icon-192.png" alt="" class="icone">
+    <div>
+      <strong>SAKUMA</strong>
+      <span>Manutenção de Frota</span>
+    </div>
+  </div>
+  <div class="sessao">
+    <span id="lbl-local" class="local"></span>
+    <button type="button" id="btn-instalar" class="btn-fantasma oculto">Instalar o app</button>
+    <button type="button" id="btn-sair" class="btn-fantasma oculto">Sair</button>
+  </div>
+</header>
+
+<nav class="menu" id="menu" hidden>
+  <button type="button" data-tela="inicio" class="ativo">Início</button>
+  <button type="button" data-tela="equipamentos">Bens</button>
+  <button type="button" data-tela="pecas">Peças</button>
+  <button type="button" data-tela="vinculos">Peças por máquina</button>
+  <button type="button" data-tela="cadastros">Cadastros</button>
+</nav>
+
+<main id="tela" class="conteudo">
+  <section class="carregando">
+    <p>Abrindo a base local…</p>
+  </section>
+</main>
+
+<footer class="rodape">
+  <span>Desenvolvido por LOP · Inteligência para o agronegócio</span>
+</footer>
+
+<div id="modal" class="modal oculto" role="dialog" aria-modal="true">
+  <div class="caixa">
+    <header><h2 id="modal-titulo"></h2>
+      <button type="button" id="modal-fechar" aria-label="Fechar">×</button>
+    </header>
+    <div id="modal-corpo"></div>
+  </div>
+</div>
+
+<div id="aviso" class="aviso oculto" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/base.js"></script>
+<script src="js/telas.js"></script>
+</body>
+</html>
