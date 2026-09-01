@@ -575,15 +575,18 @@ function abrirOS(idOS) {
   const html = `
     <div id="os-impresso">
       <header class="os-topo">
-        <div>
-          <strong class="os-marca">SAKUMA</strong>
+        <img src="icone.svg" alt="" class="os-logo">
+        <div class="os-marca">
+          <strong>SAKUMA</strong>
           <span>Agronegócios</span>
         </div>
-        <div class="os-titulo">
-          <h2>ORDEM DE SERVIÇO Nº ${os.numero || '(nova)'}</h2>
-          <p>Emitida em ${formatarData(os.data_emissao)}${os.prazo ? ' · prazo ' + formatarData(os.prazo) : ''}</p>
-        </div>
       </header>
+      <div class="os-regua"></div>
+      <div class="os-titulo">
+        <h2>ORDEM DE SERVIÇO Nº ${os.numero || '(nova)'}</h2>
+        <p>${esc(e.codigo)} · ${esc(q.nome('locais', e.local_id))} ·
+           emitida em ${formatarData(os.data_emissao)}${os.prazo ? ' · prazo ' + formatarData(os.prazo) : ''}</p>
+      </div>
 
       <table class="tabela"><tbody>
         <tr><td>Máquina</td><td><strong>${esc(e.codigo)}</strong> — ${esc(e.descricao)}</td></tr>
@@ -601,9 +604,15 @@ function abrirOS(idOS) {
         <td>Conferente do estoque<br><br>_____________________________</td>
       </tr></tbody></table>
 
-      <p class="os-rodape">Lembrete do procedimento: a <strong>foto do adesivo de troca é obrigatória</strong>
+      <p class="os-lembrete">Lembrete do procedimento: a <strong>foto do adesivo de troca é obrigatória</strong>
          e precisa estar legível. Sem ficha preenchida e foto, a troca não é considerada concluída.</p>
-      <p class="os-lop">Desenvolvido por LOP · Inteligência para o agronegócio</p>
+
+      <footer class="os-rodape">
+        <div class="os-barra"></div>
+        <p class="os-ass"><strong>Guilherme Lopes</strong> <span>· Gerente Administrativo</span></p>
+        <p class="os-empresa">SAKUMA Agronegócios</p>
+        <p class="os-lop">Desenvolvido por LOP · Inteligência para o agronegócio</p>
+      </footer>
     </div>
 
     <div class="acoes">
