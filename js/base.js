@@ -351,9 +351,77 @@ function telaLogin(mensagem) {
       <div class="campo"><label for="lg-senha">Senha</label>
         <input type="password" id="lg-senha" autocomplete="current-password"></div>
       <button type="button" class="btn" id="lg-entrar">Entrar</button>
+      <p style="margin-top:14px">
+        <button type="button" class="btn-fantasma" id="lg-esqueci">Esqueceu sua senha?</button>
+      </p>
     </div>`;
   $('#lg-entrar').onclick = entrar;
+  $('#lg-esqueci').onclick = esqueciSenha;
   $('#lg-senha').onkeydown = e => { if (e.key === 'Enter') entrar(); };
+}
+
+/* ---------------------------------------------------------------- senha
+
+   O Supabase manda um e-mail com um link que volta para o próprio app.
+   Ao voltar, o endereço traz type=recovery e o app abre a tela de troca. */
+
+function esqueciSenha() {
+  const email = ($('#lg-email') && $('#lg-email').value.trim()) || '';
+  abrirModal('Recuperar a senha', `
+    <p class="sub">Informe o e-mail cadastrado. Você vai receber um link para definir
+       uma senha nova — ele volta direto para este app.</p>
+    <div class="campo"><label for="rs-email">E-mail</label>
+      <input type="email" id="rs-email" value="${esc(email)}" autocomplete="username"></div>
+    <div class="acoes">
+      <button type="button" class="btn" id="rs-enviar">Enviar o link</button>
+      <button type="button" class="btn neutro" id="rs-cancelar">Cancelar</button>
+    </div>`, corpo => {
+    corpo.querySelector('#rs-cancelar').onclick = fecharModal;
+    corpo.querySelector('#rs-enviar').onclick = async () => {
+      const e = corpo.querySelector('#rs-email').value.trim();
+      if (!e) return aviso('Informe o e-mail.', true);
+      if (!App.online) return aviso('Precisa de internet para enviar o link.', true);
+      const b = corpo.querySelector('#rs-enviar');
+      b.disabled = true; b.textContent = 'Enviando…';
+      const { error } = await App.sb.auth.resetPasswordForEmail(e, {
+        redirectTo: location.origin + location.pathname
+      });
+      fecharModal();
+      // Não dizemos se o e-mail existe ou não: isso evita descobrir quem tem conta.
+      aviso(error ? 'Não consegui enviar agora. Tente de novo em alguns minutos.'
+                  : 'Se esse e-mail estiver cadastrado, o link chega em instantes.', !!error);
+    };
+  });
+}
+
+/* Tela de definir a senha nova, aberta quando a pessoa volta pelo link. */
+function telaNovaSenha() {
+  $('#menu').hidden = true;
+  $('#btn-sair').classList.remove('oculto');
+  $('#tela').innerHTML = `
+    <h1>Definir uma senha nova</h1>
+    <p class="sub">Escolha uma senha de pelo menos 8 caracteres. Ela vale para este app e
+       também para o app de vistorias, que usa o mesmo login.</p>
+    <div style="max-width:400px">
+      <div class="campo"><label for="ns-1">Senha nova</label>
+        <input type="password" id="ns-1" autocomplete="new-password"></div>
+      <div class="campo"><label for="ns-2">Repita a senha</label>
+        <input type="password" id="ns-2" autocomplete="new-password"></div>
+      <button type="button" class="btn" id="ns-salvar">Salvar a senha</button>
+    </div>`;
+  $('#ns-salvar').onclick = async () => {
+    const a = $('#ns-1').value, b = $('#ns-2').value;
+    if (a.length < 8) return aviso('A senha precisa ter pelo menos 8 caracteres.', true);
+    if (a !== b) return aviso('As duas senhas não são iguais.', true);
+    const btn = $('#ns-salvar'); btn.disabled = true; btn.textContent = 'Salvando…';
+    const { error } = await App.sb.auth.updateUser({ password: a });
+    btn.disabled = false; btn.textContent = 'Salvar a senha';
+    if (error) return aviso('Não deu para salvar: ' + error.message, true);
+    history.replaceState(null, '', location.pathname);
+    aviso('Senha alterada. Bem-vindo de volta.');
+    iniciarSessao();
+  };
+  $('#ns-2').onkeydown = e => { if (e.key === 'Enter') $('#ns-salvar').click(); };
 }
 
 async function entrar() {
@@ -450,6 +518,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   App.sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY,
     { db: { schema: CONFIG.SCHEMA || 'public' } });
+
+  // Voltando pelo link do e-mail: o endereço traz type=recovery.
+  App.sb.auth.onAuthStateChange((evento) => {
+    if (evento === 'PASSWORD_RECOVERY') telaNovaSenha();
+  });
+  if (location.hash.includes('type=recovery')) { telaNovaSenha(); return; }
   await carregarDaBaseLocal();
   iniciarSessao();
 
@@ -472,5 +546,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 Object.assign(window, {
   App, q, $, $$, esc, aviso, abrirModal, fecharModal,
   gravar, inativar, irPara, sincronizar, pk,
-  guardarFoto, enviarFotos
+  guardarFoto, enviarFotos, esqueciSenha, telaNovaSenha
 });
