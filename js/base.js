@@ -19,7 +19,9 @@ const TABELAS_BASE = [
   'locais', 'setores', 'tipos_equipamento', 'campos_tecnicos', 'tipos_manutencao',
   'marcas', 'fornecedores', 'mecanicos', 'listas_auxiliares', 'parametros',
   'equipamentos', 'pecas', 'pecas_equipamento', 'planos_manutencao',
-  'checklist_modelos'
+  'checklist_modelos',
+  // Etapa 3: o mecânico precisa abrir a OS no pátio, sem sinal.
+  'ordens_servico', 'os_itens', 'os_pecas', 'manutencoes', 'anomalias'
 ];
 
 /* ---------------------------------------------------------------- IndexedDB */
@@ -27,7 +29,7 @@ let idb = null;
 
 function abrirBase() {
   return new Promise((ok, erro) => {
-    const req = indexedDB.open('sakuma-manutencao', 1);
+    const req = indexedDB.open('sakuma-manutencao', 2);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains('cache')) {
@@ -39,6 +41,10 @@ function abrirBase() {
       }
       if (!db.objectStoreNames.contains('meta')) {
         db.createObjectStore('meta', { keyPath: 'chave' });
+      }
+      // Fotos ficam guardadas como Blob até o servidor confirmar o envio.
+      if (!db.objectStoreNames.contains('fotos')) {
+        db.createObjectStore('fotos', { keyPath: 'id' });
       }
     };
     req.onsuccess = () => { idb = req.result; ok(idb); };
@@ -107,7 +113,10 @@ async function itensDaFila() {
 
 async function contarFila() {
   const itens = await itensDaFila();
-  App.pendentes = itens.filter(i => i.status !== 'enviado').length;
+  let fotos = 0;
+  try { fotos = (await promessa(tx('fotos').getAll())).filter(f => f.status !== 'enviada').length; }
+  catch (e) { /* base antiga, sem a store de fotos */ }
+  App.pendentes = itens.filter(i => i.status !== 'enviado').length + fotos;
   pintarEstado();
   return App.pendentes;
 }
@@ -144,6 +153,60 @@ async function sincronizar() {
     }
   } finally {
     sincronizando = false;
+    await contarFila();
+  }
+}
+
+/* ---------------------------------------------------------------- fotos
+
+   A foto do adesivo é obrigatória para concluir a OS. Ela é comprimida no
+   aparelho, guardada como Blob e só sobe depois — uma por vez, para não
+   travar em conexão fraca de fazenda. */
+
+async function comprimirFoto(arquivo, larguraMax = 1600) {
+  const bitmap = await createImageBitmap(arquivo);
+  const escala = Math.min(1, larguraMax / bitmap.width);
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(bitmap.width * escala);
+  cv.height = Math.round(bitmap.height * escala);
+  cv.getContext('2d').drawImage(bitmap, 0, 0, cv.width, cv.height);
+  return new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.82));
+}
+
+/* Guarda a foto no aparelho e devolve o caminho que ela terá no Storage. */
+async function guardarFoto(arquivo, bucket, prefixo) {
+  const blob = await comprimirFoto(arquivo);
+  const id = crypto.randomUUID();
+  const caminho = prefixo + '/' + id + '.jpg';
+  await promessa(tx('fotos', 'readwrite').put({
+    id, bucket, caminho, blob, status: 'pendente',
+    registrado_em: new Date().toISOString()
+  }));
+  await contarFila();
+  enviarFotos();
+  return caminho;
+}
+
+async function fotosPendentes() {
+  const todas = await promessa(tx('fotos').getAll());
+  return todas.filter(f => f.status !== 'enviada');
+}
+
+let enviandoFotos = false;
+async function enviarFotos() {
+  if (enviandoFotos || !App.online || !App.sb) return;
+  enviandoFotos = true;
+  try {
+    for (const f of await fotosPendentes()) {
+      const { error } = await App.sb.storage.from(f.bucket)
+        .upload(f.caminho, f.blob, { contentType: 'image/jpeg', upsert: true });
+      if (!error || (error.message || '').includes('already exists')) {
+        f.status = 'enviada';
+        await promessa(tx('fotos', 'readwrite').put(f));
+      }
+    }
+  } finally {
+    enviandoFotos = false;
     await contarFila();
   }
 }
@@ -348,7 +411,7 @@ function irPara(nome) {
 
 /* ---------------------------------------------------------------- partida */
 
-window.addEventListener('online',  () => { App.online = true;  pintarEstado(); sincronizar(); });
+window.addEventListener('online',  () => { App.online = true;  pintarEstado(); sincronizar(); enviarFotos(); });
 window.addEventListener('offline', () => { App.online = false; pintarEstado(); });
 
 window.addEventListener('beforeunload', e => {
@@ -408,5 +471,6 @@ document.addEventListener('DOMContentLoaded', async () => {
    window. Publico o que telas.js usa, para a ordem de carga não importar. */
 Object.assign(window, {
   App, q, $, $$, esc, aviso, abrirModal, fecharModal,
-  gravar, inativar, irPara, sincronizar, pk
+  gravar, inativar, irPara, sincronizar, pk,
+  guardarFoto, enviarFotos
 });
