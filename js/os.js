@@ -741,3 +741,204 @@ function formConclusao(os, itens) {
     };
   });
 }
+
+/* =====================================================================
+   PLANOS DE MANUTENÇÃO POR MÁQUINA
+   A aba "Cadastro" da planilha: para cada máquina, de quantas em quantas
+   horas e de quantos em quantos dias cada item vence. E também a última
+   troca — data e horímetro — que é de onde sai todo o cálculo.
+   ===================================================================== */
+
+TELAS.planos = el => {
+  const maquinas = q.ativos('equipamentos')
+    .sort((a, b) => a.codigo.localeCompare(b.codigo, 'pt-BR', { numeric: true }));
+
+  el.innerHTML = `
+    <h1>Planos de manutenção</h1>
+    <p class="sub">De quantas em quantas horas e de quantos em quantos dias cada item vence,
+       por máquina. Vale o que vencer primeiro. A última troca é de onde sai todo o cálculo
+       do painel — digitar errado aqui estraga o painel inteiro.</p>
+    <div class="filtros">
+      <select id="pl-maquina" style="flex:1 1 320px">
+        <option value="">— escolha a máquina —</option>
+        ${maquinas.map(m => `<option value="${esc(m.id)}">${esc(m.codigo)} — ${esc(m.descricao)}</option>`).join('')}
+      </select>
+    </div>
+    <div id="pl-corpo"></div>`;
+
+  $('#pl-maquina').onchange = () => desenharPlanos($('#pl-maquina').value);
+  desenharPlanos('');
+};
+
+function desenharPlanos(idMaquina) {
+  const alvo = $('#pl-corpo');
+  if (!idMaquina) {
+    alvo.innerHTML = '<div class="vazio"><p>Escolha a máquina acima para ver e configurar os itens dela.</p></div>';
+    return;
+  }
+  const e = q.por_id('equipamentos', idMaquina);
+  const tipos = q.ordenado('tipos_manutencao', 'ordem').sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+  const unidade = e.unidade_controle === 'HODOMETRO' ? 'km' : 'h';
+
+  alvo.innerHTML = `
+    <h2>${esc(e.codigo)} — ${esc(e.descricao)}</h2>
+    <p class="sub">Leitura atual: <strong>${nHoras(leituraDe(e))} ${unidade}</strong>.
+       Deixe a periodicidade em branco para a máquina não controlar aquele item.</p>
+    <div class="rolagem"><table class="tabela"><thead><tr>
+      <th>Item de manutenção</th>
+      <th class="num">A cada (${unidade})</th>
+      <th class="num">A cada (dias)</th>
+      <th class="num">Margem (${unidade})</th>
+      <th class="num">Última troca — data</th>
+      <th class="num">Última troca — leitura</th>
+      <th>Situação</th>
+    </tr></thead><tbody>` + tipos.map(t => {
+      const p = q.ativos('planos_manutencao').find(x =>
+        x.equipamento_id === idMaquina && x.tipo_manutencao_id === t.id);
+      const c = p ? calcular(p) : null;
+      return `<tr data-tipo="${esc(t.id)}"${p ? ` data-plano="${esc(p.id)}"` : ''}>
+        <td><strong>${esc(t.nome)}</strong></td>
+        <td class="num"><input type="number" step="0.1" class="pl-in" name="horas"
+            value="${p && p.periodicidade_horas != null ? p.periodicidade_horas : ''}"></td>
+        <td class="num"><input type="number" class="pl-in" name="dias"
+            value="${p && p.periodicidade_dias != null ? p.periodicidade_dias : ''}"></td>
+        <td class="num"><input type="number" step="0.1" class="pl-in" name="margem"
+            placeholder="${margemPadrao()}"
+            value="${p && p.margem_horas != null ? p.margem_horas : ''}"></td>
+        <td class="num"><input type="date" class="pl-in" name="data"
+            value="${p && p.ultima_troca_data ? p.ultima_troca_data : ''}"></td>
+        <td class="num"><input type="number" step="0.1" class="pl-in" name="leitura"
+            value="${p && p.ultima_troca_leitura != null ? p.ultima_troca_leitura : ''}"></td>
+        <td>${c ? etq(c.status) + '<br><small>' + esc(c.motivo) + '</small>' : '<span class="etq inativo">sem plano</span>'}</td>
+      </tr>`;
+    }).join('') + '</tbody></table></div>' + `
+    <div class="acoes">
+      <button type="button" class="btn" id="pl-salvar">Salvar os planos desta máquina</button>
+      <button type="button" class="btn neutro" id="pl-copiar">Copiar para outras máquinas</button>
+    </div>
+    <p class="ajuda">Corrigir a última troca recalcula o vencimento na hora. A leitura antiga
+       não é apagada: fica no histórico da máquina.</p>`;
+
+  alvo.querySelector('#pl-salvar').onclick = () => salvarPlanos(idMaquina, alvo);
+  alvo.querySelector('#pl-copiar').onclick = () => copiarPlanos(idMaquina);
+}
+
+async function salvarPlanos(idMaquina, alvo) {
+  let criados = 0, alterados = 0, removidos = 0;
+  for (const tr of alvo.querySelectorAll('tbody tr')) {
+    const idTipo = tr.dataset.tipo;
+    const v = {};
+    tr.querySelectorAll('.pl-in').forEach(i => v[i.name] = i.value.trim());
+    const plano = tr.dataset.plano ? q.por_id('planos_manutencao', tr.dataset.plano) : null;
+    const temAlgo = v.horas || v.dias;
+
+    if (!temAlgo) {
+      // Sem periodicidade o item deixa de ser controlado. Inativa, não apaga:
+      // o histórico de manutenções daquele item continua íntegro.
+      if (plano && plano.ativo !== false) {
+        plano.ativo = false; await gravar('planos_manutencao', plano); removidos++;
+      }
+      continue;
+    }
+    const dados = {
+      periodicidade_horas: num(v.horas), periodicidade_dias: num(v.dias),
+      margem_horas: num(v.margem),
+      ultima_troca_data: v.data || null, ultima_troca_leitura: num(v.leitura),
+      ativo: true
+    };
+    if (plano) {
+      const mudou = ['periodicidade_horas','periodicidade_dias','margem_horas',
+                     'ultima_troca_data','ultima_troca_leitura']
+        .some(k => String(plano[k] ?? '') !== String(dados[k] ?? ''));
+      if (mudou || plano.ativo === false) {
+        await gravar('planos_manutencao', Object.assign(plano, dados)); alterados++;
+      }
+    } else {
+      await gravar('planos_manutencao', Object.assign({
+        id: crypto.randomUUID(), equipamento_id: idMaquina, tipo_manutencao_id: idTipo
+      }, dados));
+      criados++;
+    }
+  }
+  const partes = [];
+  if (criados) partes.push(criados + (criados === 1 ? ' item criado' : ' itens criados'));
+  if (alterados) partes.push(alterados + (alterados === 1 ? ' alterado' : ' alterados'));
+  if (removidos) partes.push(removidos + (removidos === 1 ? ' desligado' : ' desligados'));
+  aviso(partes.length ? partes.join(', ') + '.' : 'Nada mudou.');
+  desenharPlanos(idMaquina);
+}
+
+/* A frota tem modelos repetidos — cinco 5090e, três 5085e. Copiar a
+   periodicidade de uma máquina para as parecidas evita redigitar tudo.
+   A última troca NÃO é copiada: essa é de cada máquina. */
+function copiarPlanos(idOrigem) {
+  const orig = q.por_id('equipamentos', idOrigem);
+  const outras = q.ativos('equipamentos')
+    .filter(x => x.id !== idOrigem)
+    .sort((a, b) => a.codigo.localeCompare(b.codigo, 'pt-BR', { numeric: true }));
+
+  abrirModal('Copiar periodicidades de ' + orig.codigo, `
+    <p class="sub">Marque as máquinas que vão receber as mesmas periodicidades.
+       A <strong>última troca não é copiada</strong> — essa é de cada máquina.</p>
+    <div class="filtros"><input type="search" id="cp-busca" placeholder="Filtrar máquinas"></div>
+    <ul class="lista" id="cp-lista">
+      ${outras.map(m => `<li data-nome="${esc((m.codigo + ' ' + m.descricao).toLowerCase())}">
+        <div class="info"><span class="codigo">${esc(m.codigo)}</span> ${esc(m.descricao)}</div>
+        <input type="checkbox" class="cp-sel" value="${esc(m.id)}" style="width:22px;height:22px">
+      </li>`).join('')}
+    </ul>
+    <div class="acoes">
+      <button type="button" class="btn" id="cp-ok">Copiar</button>
+      <button type="button" class="btn neutro" id="cp-cancelar">Cancelar</button>
+    </div>`, corpo => {
+    corpo.querySelector('#cp-busca').oninput = ev => {
+      const b = ev.target.value.toLowerCase();
+      corpo.querySelectorAll('#cp-lista li').forEach(li =>
+        li.style.display = li.dataset.nome.includes(b) ? '' : 'none');
+    };
+    corpo.querySelector('#cp-cancelar').onclick = fecharModal;
+    corpo.querySelector('#cp-ok').onclick = async () => {
+      const ids = Array.from(corpo.querySelectorAll('.cp-sel:checked')).map(c => c.value);
+      if (!ids.length) return aviso('Marque pelo menos uma máquina.', true);
+      const modelo = q.ativos('planos_manutencao').filter(p => p.equipamento_id === idOrigem);
+      let n = 0;
+      for (const idDest of ids) {
+        for (const p of modelo) {
+          const ja = q.ativos('planos_manutencao').find(x =>
+            x.equipamento_id === idDest && x.tipo_manutencao_id === p.tipo_manutencao_id);
+          if (ja) {
+            ja.periodicidade_horas = p.periodicidade_horas;
+            ja.periodicidade_dias = p.periodicidade_dias;
+            ja.margem_horas = p.margem_horas;
+            await gravar('planos_manutencao', ja);
+          } else {
+            await gravar('planos_manutencao', {
+              id: crypto.randomUUID(), equipamento_id: idDest,
+              tipo_manutencao_id: p.tipo_manutencao_id,
+              periodicidade_horas: p.periodicidade_horas,
+              periodicidade_dias: p.periodicidade_dias,
+              margem_horas: p.margem_horas, ativo: true
+            });
+          }
+          n++;
+        }
+      }
+      fecharModal();
+      aviso(n + ' itens copiados para ' + ids.length + (ids.length === 1 ? ' máquina.' : ' máquinas.'));
+    };
+  });
+}
+
+/* Acrescenta a entrada na tela de Cadastros sem mexer no telas.js */
+const cadastrosOriginal = TELAS.cadastros;
+TELAS.cadastros = el => {
+  cadastrosOriginal(el);
+  const lista = el.querySelector('ul.lista');
+  if (!lista) return;
+  const li = document.createElement('li');
+  li.innerHTML = `<div class="info"><strong>Planos de manutenção por máquina</strong>
+      <small>Periodicidade em horas e dias de cada item, e a última troca</small></div>
+    <button type="button" class="btn-fantasma">Abrir</button>`;
+  li.querySelector('button').onclick = () => irPara('planos');
+  lista.insertBefore(li, lista.firstChild);
+};
