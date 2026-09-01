@@ -46,13 +46,15 @@ function calcular(plano) {
   if (r.horas_restantes != null && r.horas_restantes < 0) {
     r.status = 'TROCAR_URGENTE';
     r.motivo = 'venceu por hora — passou ' + nHoras(Math.abs(r.horas_restantes)) + ' h';
+  } else if (r.horas_restantes != null && r.horas_restantes <= margem) {
+    // A margem de segurança tem precedência sobre o período, como na planilha:
+    // item dentro da margem aparece como ATENÇÃO mesmo com o prazo em dias vencido.
+    r.status = 'ATENCAO';
+    r.motivo = 'margem de segurança — faltam ' + nHoras(r.horas_restantes) + ' h';
   } else if (r.dias != null && r.dias > plano.periodicidade_dias) {
     r.status = 'PERIODO_VENCIDO';
     const atraso = r.dias - plano.periodicidade_dias;
     r.motivo = 'venceu por período — ' + atraso + (atraso === 1 ? ' dia' : ' dias') + ' além do prazo';
-  } else if (r.horas_restantes != null && r.horas_restantes <= margem) {
-    r.status = 'ATENCAO';
-    r.motivo = 'faltam ' + nHoras(r.horas_restantes) + ' h';
   } else if (r.horas_restantes != null || r.dias != null) {
     r.status = 'OK';
     r.motivo = r.horas_restantes != null ? 'faltam ' + nHoras(r.horas_restantes) + ' h' : 'dentro do prazo';
@@ -82,103 +84,178 @@ function nHoras(v) {
 
 /* ---------------------------------------------------------------- PAINEL */
 
+/* ---------------------------------------------------------------- PAINEL
+
+   Formato do quadro da planilha "Próximas Manutenções": uma linha por
+   máquina, uma coluna por item de manutenção, e em cada cruzamento as
+   horas restantes com o status. Clicar na célula marca para a OS. */
+
+const MODOS = { quadro: 'Quadro', lista: 'Lista' };
+let modoPainel = 'quadro';
+const marcados = new Set();
+
 TELAS.vencimentos = el => {
   el.innerHTML = `
     <h1>Painel de vencimentos</h1>
-    <p class="sub">Máquinas e implementos juntos. Marque o que vai para a oficina e gere a
-       ordem de serviço — ela sai com a peça, o part number e o próximo horímetro.</p>
+    <p class="sub">Máquinas e implementos juntos. Clique na célula do item para marcar,
+       e gere a ordem de serviço — ela sai com a peça, o part number e o próximo horímetro.</p>
     <div class="filtros">
       <input type="search" id="pv-busca" placeholder="Buscar máquina">
       <select id="pv-status">
-        <option value="pendentes">Vencidos e em atenção</option>
+        <option value="pendentes">Só quem tem pendência</option>
         <option value="TROCAR_URGENTE">Só urgentes</option>
         <option value="PERIODO_VENCIDO">Só período vencido</option>
         <option value="ATENCAO">Só atenção</option>
-        <option value="todos">Todos</option>
-      </select>
-      <select id="pv-tipo"><option value="">Todos os itens</option>
-        ${q.ordenado('tipos_manutencao').map(t => `<option value="${esc(t.id)}">${esc(t.nome)}</option>`).join('')}
+        <option value="todos">Todas as máquinas</option>
       </select>
       <select id="pv-local"><option value="">Todos os locais</option>
         ${q.ordenado('locais').map(l => `<option value="${esc(l.id)}">${esc(l.nome)}</option>`).join('')}
+      </select>
+      <select id="pv-modo">
+        <option value="quadro">Quadro</option>
+        <option value="lista">Lista detalhada</option>
       </select>
     </div>
     <div id="pv-resumo" class="painel"></div>
     <div class="acoes">
       <button type="button" class="btn" id="pv-gerar" disabled>Gerar OS do que está marcado</button>
-      <button type="button" class="btn neutro" id="pv-todos">Marcar todos da lista</button>
+      <button type="button" class="btn neutro" id="pv-limpar">Limpar marcação</button>
     </div>
     <div id="pv-lista"></div>`;
 
-  const desenhar = () => {
-    const busca = ($('#pv-busca').value || '').toLowerCase();
-    const fSt = $('#pv-status').value, fTp = $('#pv-tipo').value, fLo = $('#pv-local').value;
-
-    const linhas = q.ativos('planos_manutencao').map(p => ({ plano: p, c: calcular(p) }))
-      .filter(x => x.c.equipamento && x.c.equipamento.ativo !== false)
-      .filter(x => {
-        if (fTp && x.plano.tipo_manutencao_id !== fTp) return false;
-        if (fLo && x.c.equipamento.local_id !== fLo) return false;
-        if (busca && !(x.c.equipamento.codigo + ' ' + x.c.equipamento.descricao).toLowerCase().includes(busca)) return false;
-        if (fSt === 'pendentes') return ['TROCAR_URGENTE','PERIODO_VENCIDO','ATENCAO'].includes(x.c.status);
-        if (fSt !== 'todos') return x.c.status === fSt;
-        return true;
-      })
-      .sort((a, b) => {
-        const ordem = { TROCAR_URGENTE:0, PERIODO_VENCIDO:1, ATENCAO:2, OK:3, SEM_DADO:4 };
-        if (ordem[a.c.status] !== ordem[b.c.status]) return ordem[a.c.status] - ordem[b.c.status];
-        return (a.c.horas_restantes ?? 9e9) - (b.c.horas_restantes ?? 9e9);
-      });
-
-    const conta = st => q.ativos('planos_manutencao').map(calcular).filter(c => c.status === st).length;
-    $('#pv-resumo').innerHTML = `
-      <div class="cartao alerta"><b>${conta('TROCAR_URGENTE')}</b><span>trocar urgente</span></div>
-      <div class="cartao alerta"><b>${conta('PERIODO_VENCIDO')}</b><span>período vencido</span></div>
-      <div class="cartao"><b>${conta('ATENCAO')}</b><span>atenção</span></div>
-      <div class="cartao"><b>${conta('OK')}</b><span>em dia</span></div>`;
-
-    $('#pv-lista').innerHTML = linhas.length === 0
-      ? '<div class="vazio"><p>Nada com esses filtros.</p></div>'
-      : `<p class="sub">${linhas.length} ${linhas.length === 1 ? 'item' : 'itens'}</p>
-        <table class="tabela"><thead><tr>
-          <th></th><th>Máquina</th><th>Item</th><th class="num">Leitura</th>
-          <th class="num">Última troca</th><th class="num">Próximo hr</th><th>Situação</th><th class="num">Peças</th>
-        </tr></thead><tbody>` + linhas.map(({plano, c}) => {
-          const pecas = q.ativos('pecas_equipamento').filter(v =>
-            v.equipamento_id === plano.equipamento_id && v.tipo_manutencao_id === plano.tipo_manutencao_id).length;
-          return `<tr>
-            <td><input type="checkbox" class="pv-sel" value="${esc(plano.id)}" style="width:22px;height:22px"></td>
-            <td><span class="codigo">${esc(c.equipamento.codigo)}</span><br><small>${esc(c.equipamento.descricao)}</small></td>
-            <td>${esc(q.nome('tipos_manutencao', plano.tipo_manutencao_id))}</td>
-            <td class="num">${nHoras(c.leitura)}</td>
-            <td class="num">${plano.ultima_troca_data ? formatarData(plano.ultima_troca_data) : '—'}
-                <br><small>${nHoras(plano.ultima_troca_leitura)}</small></td>
-            <td class="num"><strong>${nHoras(c.proximo_hr)}</strong></td>
-            <td>${etq(c.status)}<br><small>${esc(c.motivo)}</small></td>
-            <td class="num">${pecas === 0 ? '<span class="etq atencao">nenhuma</span>' : pecas}</td>
-          </tr>`;
-        }).join('') + '</tbody></table>';
-
-    const atualizarBotao = () => {
-      $('#pv-gerar').disabled = document.querySelectorAll('.pv-sel:checked').length === 0;
-    };
-    document.querySelectorAll('.pv-sel').forEach(c => c.onchange = atualizarBotao);
-    atualizarBotao();
-  };
-
-  ['pv-busca','pv-status','pv-tipo','pv-local'].forEach(id => {
-    const e = document.getElementById(id); e.oninput = desenhar; e.onchange = desenhar;
+  $('#pv-modo').value = modoPainel;
+  ['pv-busca','pv-status','pv-local'].forEach(id => {
+    const e = document.getElementById(id); e.oninput = desenharPainel; e.onchange = desenharPainel;
   });
-  $('#pv-todos').onclick = () => {
-    document.querySelectorAll('.pv-sel').forEach(c => c.checked = true);
-    $('#pv-gerar').disabled = false;
-  };
-  $('#pv-gerar').onclick = () => {
-    const ids = Array.from(document.querySelectorAll('.pv-sel:checked')).map(c => c.value);
-    gerarOS(ids);
-  };
-  desenhar();
+  $('#pv-modo').onchange = () => { modoPainel = $('#pv-modo').value; desenharPainel(); };
+  $('#pv-limpar').onclick = () => { marcados.clear(); desenharPainel(); };
+  $('#pv-gerar').onclick = () => gerarOS([...marcados]);
+  desenharPainel();
 };
+
+function botaoGerar() {
+  const b = $('#pv-gerar');
+  if (!b) return;
+  b.disabled = marcados.size === 0;
+  b.textContent = marcados.size === 0 ? 'Gerar OS do que está marcado'
+    : 'Gerar OS de ' + marcados.size + (marcados.size === 1 ? ' item marcado' : ' itens marcados');
+}
+
+function desenharPainel() {
+  const busca = ($('#pv-busca').value || '').toLowerCase();
+  const fSt = $('#pv-status').value, fLo = $('#pv-local').value;
+
+  // calcula tudo uma vez
+  const todos = q.ativos('planos_manutencao').map(p => ({ plano: p, c: calcular(p) }))
+    .filter(x => x.c.equipamento && x.c.equipamento.ativo !== false);
+
+  const conta = st => todos.filter(x => x.c.status === st).length;
+  $('#pv-resumo').innerHTML = `
+    <div class="cartao alerta"><b>${conta('TROCAR_URGENTE')}</b><span>trocar urgente</span></div>
+    <div class="cartao alerta"><b>${conta('PERIODO_VENCIDO')}</b><span>período vencido</span></div>
+    <div class="cartao"><b>${conta('ATENCAO')}</b><span>atenção</span></div>
+    <div class="cartao"><b>${conta('OK')}</b><span>em dia</span></div>`;
+
+  // agrupa por máquina
+  const porMaquina = new Map();
+  for (const x of todos) {
+    const e = x.c.equipamento;
+    if (fLo && e.local_id !== fLo) continue;
+    if (busca && !(e.codigo + ' ' + e.descricao).toLowerCase().includes(busca)) continue;
+    if (!porMaquina.has(e.id)) porMaquina.set(e.id, { equipamento: e, itens: {} });
+    porMaquina.get(e.id).itens[x.plano.tipo_manutencao_id] = x;
+  }
+
+  // colunas: só os itens que alguma máquina realmente usa
+  const usados = new Set(todos.map(x => x.plano.tipo_manutencao_id));
+  const colunas = q.ordenado('tipos_manutencao', 'ordem')
+    .filter(t => usados.has(t.id))
+    .sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+
+  let linhas = [...porMaquina.values()].map(m => {
+    const lista = Object.values(m.itens);
+    m.urgentes = lista.filter(x => x.c.status === 'TROCAR_URGENTE').length;
+    m.pendentes = lista.filter(x => ['TROCAR_URGENTE','PERIODO_VENCIDO','ATENCAO'].includes(x.c.status)).length;
+    m.pior = Math.min(...lista.map(x => x.c.horas_restantes ?? 9e9));
+    return m;
+  });
+
+  if (fSt === 'pendentes') linhas = linhas.filter(m => m.pendentes > 0);
+  else if (fSt !== 'todos') linhas = linhas.filter(m => Object.values(m.itens).some(x => x.c.status === fSt));
+
+  linhas.sort((a, b) => (b.urgentes - a.urgentes) || (a.pior - b.pior)
+    || a.equipamento.codigo.localeCompare(b.equipamento.codigo, 'pt-BR', { numeric: true }));
+
+  $('#pv-lista').innerHTML = linhas.length === 0
+    ? '<div class="vazio"><p>Nada com esses filtros.</p></div>'
+    : (modoPainel === 'quadro' ? quadro(linhas, colunas) : listaDetalhada(linhas));
+
+  $('#pv-lista').querySelectorAll('[data-plano]').forEach(c => c.onclick = () => {
+    const id = c.dataset.plano;
+    marcados.has(id) ? marcados.delete(id) : marcados.add(id);
+    c.classList.toggle('marcada');
+    botaoGerar();
+  });
+  botaoGerar();
+}
+
+const CURTO = { TROCAR_URGENTE:'URGENTE', PERIODO_VENCIDO:'PERÍODO', ATENCAO:'ATENÇÃO', OK:'OK', SEM_DADO:'—' };
+
+function quadro(linhas, colunas) {
+  const cab = colunas.map(t => `<th class="num">${esc(t.nome)}</th>`).join('');
+  return `<p class="sub">${linhas.length} ${linhas.length === 1 ? 'máquina' : 'máquinas'} ·
+      clique na célula para marcar o item</p>
+    <div class="rolagem"><table class="tabela quadro"><thead><tr>
+      <th>Código</th><th>Máquina / equipamento</th><th class="num">Leitura</th>
+      ${cab}<th class="num">Urgentes</th>
+    </tr></thead><tbody>` + linhas.map(m => {
+      const e = m.equipamento;
+      return `<tr>
+        <td class="codigo">${esc(e.codigo)}</td>
+        <td>${esc(e.descricao)}</td>
+        <td class="num">${nHoras(leituraDe(e))}</td>
+        ${colunas.map(t => {
+          const x = m.itens[t.id];
+          if (!x) return '<td class="cel vazia">—</td>';
+          const [cls] = ETIQUETA[x.c.status] || ETIQUETA.SEM_DADO;
+          const pecas = q.ativos('pecas_equipamento').filter(v =>
+            v.equipamento_id === e.id && v.tipo_manutencao_id === t.id).length;
+          return `<td class="cel st-${cls}${marcados.has(x.plano.id) ? ' marcada' : ''}"
+                      data-plano="${esc(x.plano.id)}"
+                      title="${esc(x.c.motivo)}${pecas ? ' · ' + pecas + ' peça(s)' : ' · sem peça cadastrada'}">
+            <strong>${x.c.horas_restantes != null ? nHoras(x.c.horas_restantes) : '—'}</strong>
+            <span>${CURTO[x.c.status]}</span>
+            ${pecas === 0 ? '<em>sem peça</em>' : ''}
+          </td>`;
+        }).join('')}
+        <td class="num">${m.urgentes || ''}</td>
+      </tr>`;
+    }).join('') + '</tbody></table></div>';
+}
+
+function listaDetalhada(linhas) {
+  const itens = [];
+  linhas.forEach(m => Object.values(m.itens).forEach(x => itens.push(x)));
+  itens.sort((a, b) => (a.c.horas_restantes ?? 9e9) - (b.c.horas_restantes ?? 9e9));
+  return `<p class="sub">${itens.length} itens</p>
+    <table class="tabela"><thead><tr>
+      <th>Máquina</th><th>Item</th><th class="num">Leitura</th><th class="num">Última troca</th>
+      <th class="num">Próximo hr</th><th>Situação</th><th class="num">Peças</th>
+    </tr></thead><tbody>` + itens.map(({plano, c}) => {
+      const pecas = q.ativos('pecas_equipamento').filter(v =>
+        v.equipamento_id === plano.equipamento_id && v.tipo_manutencao_id === plano.tipo_manutencao_id).length;
+      return `<tr class="cel${marcados.has(plano.id) ? ' marcada' : ''}" data-plano="${esc(plano.id)}">
+        <td><span class="codigo">${esc(c.equipamento.codigo)}</span><br><small>${esc(c.equipamento.descricao)}</small></td>
+        <td>${esc(q.nome('tipos_manutencao', plano.tipo_manutencao_id))}</td>
+        <td class="num">${nHoras(c.leitura)}</td>
+        <td class="num">${plano.ultima_troca_data ? formatarData(plano.ultima_troca_data) : '—'}
+            <br><small>${nHoras(plano.ultima_troca_leitura)}</small></td>
+        <td class="num"><strong>${nHoras(c.proximo_hr)}</strong></td>
+        <td>${etq(c.status)}<br><small>${esc(c.motivo)}</small></td>
+        <td class="num">${pecas === 0 ? '<span class="etq atencao">nenhuma</span>' : pecas}</td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
+}
 
 /* ---------------------------------------------------------------- gerar OS */
 
