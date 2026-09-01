@@ -215,9 +215,37 @@ legend{padding:0 8px;font-weight:bold;font-size:14px;color:var(--marrom)}
 
 @media(prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
 
+/* ---------- ordem de serviço ---------- */
+.os-topo{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  border-bottom:3px solid var(--verde);padding-bottom:10px;margin-bottom:14px}
+.os-marca{display:block;font-size:22px;letter-spacing:.1em;color:var(--verde-escuro)}
+.os-topo span{font-size:12px;color:var(--cinza-claro)}
+.os-titulo{text-align:right}
+.os-titulo h2{margin:0;font-size:17px;color:var(--cinza)}
+.os-titulo p{margin:2px 0 0;font-size:13px;color:var(--cinza-claro)}
+.os-servico{margin:18px 0;border:1px solid var(--linha);border-radius:var(--raio);
+  padding:14px;background:var(--branco)}
+.os-servico h3{margin:0 0 10px;font-size:16px;color:var(--marrom);
+  border-bottom:1px solid var(--linha);padding-bottom:6px;display:flex;gap:10px;align-items:center}
+.os-servico h4{margin:16px 0 6px;font-size:14px;color:var(--cinza)}
+.os-destaque{font-weight:bold;font-size:17px;color:var(--marrom)}
+.os-alerta{background:#FFF6E5;border-left:4px solid var(--atencao);padding:10px 12px;
+  margin:6px 0;font-size:14px}
+.os-caixa{text-align:center;font-size:20px;line-height:1}
+.os-manual td{background:#FAFBF7}
+.os-assinaturas td{padding:22px 12px 10px;text-align:center;font-size:13px;color:var(--cinza-claro)}
+.os-rodape{font-size:12px;color:var(--cinza);border-top:1px solid var(--linha);
+  padding-top:8px;margin-top:14px}
+.os-lop{font-size:11px;color:var(--cinza-claro);text-align:center;margin:6px 0 0}
+
 /* ---------- impressão A4 ---------- */
 @media print{
   .barra-lop,.menu,.rodape,.acoes,.filtros,#btn-instalar,#btn-sair{display:none !important}
+  body.imprimindo-os .topo,body.imprimindo-os .conteudo{display:none !important}
+  body.imprimindo-os .modal{position:static;background:none;display:block}
+  body.imprimindo-os .modal .caixa{max-width:none;max-height:none;border-radius:0;background:#fff}
+  body.imprimindo-os .modal header{display:none !important}
+  .os-servico{break-inside:avoid;page-break-inside:avoid}
   body{background:#fff;font-size:11pt}
   .conteudo{padding:0;max-width:none}
   .topo{border-bottom:2px solid var(--verde)}
