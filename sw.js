@@ -4,7 +4,7 @@
    sem quebrar o app já aberto: o novo só assume depois que fecha.
    ===================================================================== */
 
-const CACHE = 'sakuma-manutencao-v1';
+const CACHE = 'sakuma-manutencao-v2';
 
 const ARQUIVOS = [
   './',
@@ -14,6 +14,7 @@ const ARQUIVOS = [
   './js/config.js',
   './js/base.js',
   './js/telas.js',
+  './js/os.js',
   './img/lop-branca.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
