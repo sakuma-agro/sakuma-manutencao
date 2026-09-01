@@ -4,7 +4,7 @@
    sem quebrar o app já aberto: o novo só assume depois que fecha.
    ===================================================================== */
 
-const CACHE = 'sakuma-manutencao-v7';
+const CACHE = 'sakuma-manutencao-v8';
 
 const ARQUIVOS = [
   './',
@@ -15,6 +15,7 @@ const ARQUIVOS = [
   './js/base.js',
   './js/telas.js',
   './js/os.js',
+  './js/horimetro.js',
   './icone.svg',
   './lop-branca.svg',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'
