@@ -215,6 +215,26 @@ legend{padding:0 8px;font-weight:bold;font-size:14px;color:var(--marrom)}
 
 @media(prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
 
+/* ---------- quadro de vencimentos (formato da planilha) ---------- */
+.rolagem{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.quadro{min-width:900px}
+.quadro th{font-size:12px;padding:8px 6px;vertical-align:bottom}
+.quadro td{padding:6px 8px;font-size:14px}
+.quadro .cel{text-align:center;cursor:pointer;user-select:none;min-width:96px;
+  border-left:1px solid var(--linha);line-height:1.25}
+.quadro .cel strong{display:block;font-size:15px}
+.quadro .cel span{display:block;font-size:10px;letter-spacing:.03em;font-weight:bold}
+.quadro .cel em{display:block;font-size:10px;font-style:normal;color:var(--marrom)}
+.quadro .cel.vazia{color:var(--linha);cursor:default;background:#FCFCFA}
+.cel.st-urgente{background:#FBE9E7;color:var(--urgente)}
+.cel.st-vencido{background:#FDF0E3;color:var(--vencido)}
+.cel.st-atencao{background:#FFF8E1;color:#8A6400}
+.cel.st-ok{background:#F1F7EA;color:var(--ok)}
+.cel.st-neutro{background:#F7F7F5;color:var(--cinza-claro)}
+.cel.marcada{outline:3px solid var(--verde);outline-offset:-3px;font-weight:bold}
+tr.cel{cursor:pointer}
+tr.cel.marcada td{background:#F1F7EA}
+
 /* ---------- ordem de serviço ---------- */
 .os-topo{display:flex;align-items:center;justify-content:space-between;gap:16px;
   border-bottom:3px solid var(--verde);padding-bottom:10px;margin-bottom:14px}
