@@ -280,5 +280,141 @@ tr.cel.marcada td{background:#F1F7EA}
   .conteudo{padding:0;max-width:none}
   .topo{border-bottom:2px solid var(--verde)}
   .tabela th{background:#fff;color:var(--cinza);border-bottom:2px solid var(--verde)}
-  @page{size:A4;margin:14mm}
+  @page{size:A4;margin:9mm 11mm}
+}
+
+/* =====================================================================
+   CHECK LIST DE CAMPO
+   Preenchimento no celular (de luva) e folha A4 idêntica ao formulário.
+   ===================================================================== */
+
+/* ---------- agenda ---------- */
+.ck-agenda li{border-left:5px solid var(--linha)}
+.ck-agenda li.st-atrasado{border-left-color:var(--urgente)}
+.ck-agenda li.st-hoje{border-left-color:var(--vencido)}
+.ck-agenda li.st-semana{border-left-color:var(--atencao)}
+.ck-agenda li.st-ok{border-left-color:var(--ok)}
+.ck-agenda li.st-nunca{border-left-color:var(--marrom)}
+.abas{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap}
+.abas button{
+  min-height:var(--toque);padding:0 16px;border:1px solid var(--linha);background:var(--branco);
+  border-radius:20px;font:inherit;font-size:15px;color:var(--cinza);cursor:pointer;
+}
+.abas button.ativo{background:var(--verde);border-color:var(--verde);color:#fff;font-weight:bold}
+
+/* ---------- preenchimento ---------- */
+.ck-cab{background:var(--branco);border:1px solid var(--linha);border-radius:var(--raio);padding:14px;margin-bottom:14px}
+.ck-cab .maquina{font-size:18px;color:var(--marrom);margin:0 0 10px}
+.ck-cab .maquina small{display:block;color:var(--cinza-claro);font-size:13px;font-weight:normal}
+.ck-grupo{margin:0 0 16px}
+.ck-grupo h2{
+  background:var(--verde);color:#fff;margin:0;padding:8px 12px;font-size:15px;
+  border-radius:var(--raio) var(--raio) 0 0;letter-spacing:.03em;display:flex;justify-content:space-between
+}
+.ck-grupo h2 small{font-weight:normal;opacity:.85}
+.ck-item{
+  background:var(--branco);border:1px solid var(--linha);border-top:0;padding:10px 12px;
+  display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center;
+}
+.ck-item:last-child{border-radius:0 0 var(--raio) var(--raio)}
+.ck-item.pendente{background:#FFFDF5}
+.ck-item .texto{font-size:15px}
+.ck-item .texto small{display:block;color:var(--cinza-claro);font-size:12px}
+.ck-resp{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.ck-btn{
+  min-height:var(--toque);min-width:64px;padding:0 12px;border:2px solid var(--linha);
+  background:var(--branco);border-radius:var(--raio);font:inherit;font-size:14px;font-weight:bold;
+  color:var(--cinza);cursor:pointer;white-space:nowrap;
+}
+.ck-btn.bom.sel{background:var(--ok);border-color:var(--ok);color:#fff}
+.ck-btn.medio.sel{background:var(--atencao);border-color:var(--atencao);color:#fff}
+.ck-btn.ruim.sel{background:var(--urgente);border-color:var(--urgente);color:#fff}
+.ck-btn.na.sel{background:var(--cinza-claro);border-color:var(--cinza-claro);color:#fff}
+.ck-item input.ck-num,.ck-item input.ck-txt{
+  min-height:var(--toque);padding:0 10px;border:1px solid var(--linha);border-radius:var(--raio);
+  font:inherit;font-size:16px;width:140px;text-align:right;background:var(--branco);color:var(--cinza)
+}
+.ck-item input.ck-txt{width:220px;text-align:left}
+.ck-extra{grid-column:1 / -1;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.ck-extra input.obs{
+  flex:1 1 200px;min-height:42px;padding:0 10px;border:1px solid var(--linha);border-radius:var(--raio);
+  font:inherit;font-size:15px;background:var(--branco);color:var(--cinza)
+}
+.ck-extra input.obs.obrigatoria{border-color:var(--urgente);background:#FFF5F4}
+.ck-foto{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 12px;
+  border:1px dashed var(--cinza-claro);border-radius:var(--raio);font-size:14px;color:var(--cinza);
+  background:var(--branco);cursor:pointer}
+.ck-foto input{display:none}
+.ck-miniaturas{display:flex;gap:6px;flex-wrap:wrap}
+.ck-miniaturas img{width:56px;height:56px;object-fit:cover;border-radius:4px;border:1px solid var(--linha)}
+.ck-barra{
+  position:sticky;bottom:calc(36px + env(safe-area-inset-bottom));z-index:5;
+  background:var(--branco);border:1px solid var(--linha);border-radius:var(--raio);
+  padding:10px 12px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  box-shadow:0 -2px 10px rgba(0,0,0,.06);margin-top:14px;
+}
+.chip{display:inline-block;padding:6px 12px;border-radius:20px;font-size:14px;font-weight:bold;background:#F7F7F5;color:var(--cinza-claro)}
+.chip.ok{background:#F1F7EA;color:var(--ok)}
+.chip.ressalva{background:#FFF8E1;color:#8A6400}
+.chip.parada{background:#FBE9E7;color:var(--urgente)}
+
+/* ---------- folha A4 (impressa e relatório) ---------- */
+.ck-folha{background:#fff;color:var(--cinza);font-size:10pt;line-height:1.15}
+.ck-folha .cab{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  border-bottom:3px solid var(--verde);padding-bottom:6px;margin-bottom:6px}
+.ck-folha .cab img{height:34px;width:auto}
+.ck-folha .cab h2{margin:0;font-size:13pt;color:var(--marrom);text-align:right;line-height:1.1}
+.ck-folha .cab h2 small{display:block;font-size:8pt;color:var(--cinza-claro);font-weight:normal;letter-spacing:.05em}
+.ck-folha .id{width:100%;border-collapse:collapse;margin-bottom:5px;font-size:9pt}
+.ck-folha .id td{padding:2px 5px;border:1px solid var(--linha)}
+.ck-folha .id td.rot{color:var(--cinza-claro);width:12%;white-space:nowrap}
+.ck-folha .id td.val{font-weight:bold}
+.ck-folha .id td.val.res{white-space:nowrap;font-size:9pt}
+.ck-folha .resumo{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+.ck-folha .resumo div{flex:1 1 90px;border:1px solid var(--linha);border-radius:4px;padding:6px 8px;text-align:center;font-size:9pt;color:var(--cinza-claro)}
+.ck-folha .resumo div b{display:block;font-size:15pt;color:var(--cinza)}
+.ck-folha .resumo div.res b{font-size:11pt}
+.ck-folha .resumo div.res.ok b{color:var(--ok)}
+.ck-folha .resumo div.res.ressalva b{color:#8A6400}
+.ck-folha .resumo div.res.parada b{color:var(--urgente)}
+.ck-folha h3{margin:8px 0 3px;font-size:10pt;color:var(--marrom);letter-spacing:.03em}
+.ck-folha table.grp{width:100%;border-collapse:collapse;margin-bottom:3px;font-size:8.5pt}
+.ck-folha table.grp tr{break-inside:avoid;page-break-inside:avoid}
+.ck-folha table.grp thead{display:table-header-group}
+.ck-folha table.grp th{background:var(--verde);color:#fff;font-size:7.5pt;padding:1px 5px;border:1px solid var(--verde);text-align:left;height:4.4mm}
+.ck-folha table.grp th.nome{font-size:8.5pt;letter-spacing:.04em}
+.ck-folha table.grp th.c{text-align:center;width:11mm}
+.ck-folha table.grp td{padding:0 5px;border:1px solid var(--linha);vertical-align:middle;height:4.7mm}
+.ck-folha table.grp thead{break-after:avoid;page-break-after:avoid}
+.ck-folha table.grp td.c{text-align:center;font-size:11pt;line-height:1}
+.ck-folha table.grp td.obs{width:38%;color:var(--cinza)}
+.ck-folha table.grp tr.nc td{background:#FFF5F4}
+.ck-folha table.grp tr.md td{background:#FFFBEA}
+.ck-folha table.nc{width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:8px}
+.ck-folha table.nc th{background:var(--urgente);color:#fff;padding:4px 6px;font-size:9pt;text-align:left}
+.ck-folha table.nc td{padding:4px 6px;border:1px solid var(--linha);vertical-align:top}
+.ck-folha .nc-ok{border:1px solid var(--ok);color:var(--ok);padding:8px 10px;font-weight:bold;margin-bottom:8px}
+.ck-folha .obs-geral{border:1px solid var(--linha);min-height:18mm;padding:4px 6px;font-size:9pt;margin-top:3px}
+.ck-folha .assin{width:100%;margin-top:7mm;border-collapse:collapse;break-inside:avoid}
+.ck-folha .assin td{width:50%;text-align:center;font-size:8pt;color:var(--cinza-claro);padding:0 12mm}
+.ck-folha .assin td div{border-top:1px solid var(--cinza);padding-top:4px}
+.ck-folha .fotos{margin-top:10px}
+.ck-folha .fotos h3{font-size:10pt}
+.ck-folha .fotos .grade{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ck-folha .fotos figure{margin:0;break-inside:avoid;page-break-inside:avoid}
+.ck-folha .fotos img{width:100%;height:52mm;object-fit:cover;border:1px solid var(--linha)}
+.ck-folha .fotos figcaption{font-size:8pt;color:var(--cinza-claro);margin-top:2px}
+.ck-folha .rod{border-top:1px solid var(--linha);margin-top:6px;padding-top:4px;font-size:7.5pt;color:var(--cinza-claro);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ck-folha .rod strong{color:var(--cinza)}
+.ck-folha.quebra{break-after:page;page-break-after:always}
+
+/* impressão em lote: só as folhas aparecem */
+#impressao-lote{display:none}
+@media print{
+  body.imprimindo-lote .barra-lop,body.imprimindo-lote .topo,body.imprimindo-lote .menu,
+  body.imprimindo-lote .conteudo,body.imprimindo-lote .rodape,body.imprimindo-lote .modal,body.imprimindo-lote .aviso{display:none !important}
+  body.imprimindo-lote #impressao-lote{display:block}
+  body.imprimindo-lote{margin:0}
+  .ck-folha{font-size:10pt}
+  .ck-barra{display:none !important}
 }
