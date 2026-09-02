@@ -19,10 +19,20 @@ const TABELAS_BASE = [
   'locais', 'setores', 'tipos_equipamento', 'campos_tecnicos', 'tipos_manutencao',
   'marcas', 'fornecedores', 'mecanicos', 'listas_auxiliares', 'parametros',
   'equipamentos', 'pecas', 'pecas_equipamento', 'planos_manutencao',
-  'checklist_modelos',
+  // Etapa 4: o check list é preenchido no campo, sem sinal. Modelos, versões,
+  // grupos e itens vêm inteiros; os check lists já feitos alimentam a agenda.
+  'checklist_modelos', 'checklist_versoes', 'checklist_grupos', 'checklist_itens',
+  'checklist_equipamento', 'checklists', 'checklist_respostas', 'checklist_fotos',
+  'responsaveis_manutencao',
   // Etapa 3: o mecânico precisa abrir a OS no pátio, sem sinal.
   'ordens_servico', 'os_itens', 'os_pecas', 'manutencoes', 'anomalias'
 ];
+
+/* Colunas que o BANCO gera (identity ALWAYS). Nunca vão no envio: o Postgres
+   recusa INSERT/UPSERT com valor nelas. Depois do OK o app lê o número de volta. */
+const GERADAS_NO_BANCO = {
+  anomalias: ['numero'], checklists: ['numero'], ordens_servico: ['numero']
+};
 
 /* ---------------------------------------------------------------- IndexedDB */
 let idb = null;
@@ -134,8 +144,19 @@ async function sincronizar() {
       try {
         let r;
         if (item.operacao === 'upsert') {
+          const envio = Object.assign({}, item.registro);
+          (GERADAS_NO_BANCO[item.tabela] || []).forEach(c => delete envio[c]);
           r = await App.sb.from(item.tabela)
-                .upsert(item.registro, { onConflict: pk(item.tabela) });
+                .upsert(envio, { onConflict: pk(item.tabela) }).select();
+          // O servidor devolve o registro completo (com o número que ele gerou):
+          // guardo na base local para a tela mostrar o nº da anomalia / OS.
+          if (!r.error && r.data && r.data[0]) {
+            const salvo = r.data[0];
+            await gravarLocal(item.tabela, [salvo]);
+            const lista = App.dados[item.tabela] || [];
+            const i = lista.findIndex(x => x[pk(item.tabela)] === salvo[pk(item.tabela)]);
+            if (i >= 0) Object.assign(lista[i], salvo); else lista.push(salvo);
+          }
         } else if (item.operacao === 'excluir') {
           // Cadastro em uso nunca é apagado: "excluir" aqui é inativar.
           r = await App.sb.from(item.tabela).update({ ativo: false })
@@ -185,6 +206,15 @@ async function guardarFoto(arquivo, bucket, prefixo) {
   await contarFila();
   enviarFotos();
   return caminho;
+}
+
+/* Devolve o Blob de uma foto guardada no aparelho, ou null se já não estiver aqui. */
+async function blobDaFoto(caminho) {
+  try {
+    const todas = await promessa(tx('fotos').getAll());
+    const f = todas.find(x => x.caminho === caminho);
+    return f ? f.blob : null;
+  } catch (e) { return null; }
 }
 
 async function fotosPendentes() {
@@ -465,7 +495,13 @@ async function iniciarSessao() {
     ? 'Todos os locais'
     : locais.map(l => l.nome).join(' · ');
 
-  irPara('inicio');
+  // Atalhos do ícone do app (?acao=checklist) e link do relatório enviado por WhatsApp
+  const params = new URLSearchParams(location.search);
+  const acao = params.get('acao'), ck = params.get('checklist');
+  if (ck && window.abrirRelatorioChecklist) { irPara('checklist'); abrirRelatorioChecklist(ck); }
+  else if (acao && TELAS[acao]) irPara(acao);
+  else irPara('inicio');
+  if (acao || ck) history.replaceState(null, '', location.pathname);
   sincronizar();
 }
 
@@ -545,6 +581,6 @@ document.addEventListener('DOMContentLoaded', async () => {
    window. Publico o que telas.js usa, para a ordem de carga não importar. */
 Object.assign(window, {
   App, q, $, $$, esc, aviso, abrirModal, fecharModal,
-  gravar, inativar, irPara, sincronizar, pk,
+  gravar, inativar, irPara, sincronizar, pk, meta, blobDaFoto, baixarBase,
   guardarFoto, enviarFotos, esqueciSenha, telaNovaSenha
 });

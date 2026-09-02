@@ -15,5 +15,5 @@ window.CONFIG = {
 
   // Versão da base local. Mudar este número força o app a baixar
   // os cadastros de novo na próxima entrada com internet.
-  VERSAO_BASE: 1
+  VERSAO_BASE: 2
 };
